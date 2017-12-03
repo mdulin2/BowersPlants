@@ -8,5 +8,6 @@ class User:
         S = SQLClient()
         S.test()
 
+
 if __name__ == '__main__': #runs if it's the main function being called
     Y = User()
