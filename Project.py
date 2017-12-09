@@ -2,6 +2,7 @@
 import mysql.connector
 from mysql.connector.cursor import MySQLCursorPrepared
 import config
+import random as rand
 
 class SQLClient:
     def __init__(self):
@@ -15,16 +16,11 @@ class SQLClient:
         """
         A function to test the SQL code in
         """
-
-        #self.add_plant("tree_top","herak","Room 324","Kitty top")
-        self.display_table("P")
-
-        self.add_ownership(48755,3)
-        self.display_table("U")
-
-        #self.add_plant("Kitten","herak","Room 324","Possums")
-
-
+        self.display_table("O")
+        self.add_user(1,"Van N.",3605080789)
+        self.add_ownership(1,4)
+        self.users_without_plants()
+        self.users_with_most_plants()
 
     def display_table(self, table_start):
         """
@@ -70,7 +66,10 @@ class SQLClient:
         """
         Adds a plant to the database with an auto increment key
         Args:
-
+            plantType: the breed of plant
+            building: the building in which the plant is located
+            area: the place where the plant is at inside of the building
+            plantName: the name of the plant being added
         """
         statement = """
         SELECT *
@@ -88,6 +87,7 @@ class SQLClient:
             VALUES("%s",%s);""" % (plantType,thirst)
             rs.execute(statement)
 
+        #gets the locationID
         statement = """
         SELECT locationID
         FROM Location
@@ -102,6 +102,7 @@ class SQLClient:
                     parse_location += char
             print parse_location
 
+        #gets the plantType ID
         statement = """
         SELECT ID
         FROM PlantType
@@ -114,13 +115,11 @@ class SQLClient:
                 if(char.isdigit()):
                     parse_type += char
             print parse_type
-        #need to check to see if the PlantType is in here
+
         statement = """
         INSERT INTO Plant(locationID,plantName,plantType)
         VALUES(%s,"%s","%s");""" % (parse_location,plantName,parse_type)
         rs.execute(statement)
-
-
         con.commit()
         rs.close()
         con.close()
@@ -141,7 +140,7 @@ class SQLClient:
         if(self.check(statement)== True):
             print("plant not in database")
             return
-
+        #checks to make sure the user is in the database
         statement = """
         SELECT *
         FROM Users
@@ -149,14 +148,14 @@ class SQLClient:
         if(self.check(statement)== True):
             print "user not in database"
             return
-
+        #checks to make sure that the plant is in the database
         statement = """
         SELECT * FROM PlantOwnership
         WHERE userID = %s AND plantID = %s """ %(userID,plantID)
         if(self.check(statement) == False):
             print "The relationship already exists!"
             return
-
+        #inserts the plant
         statement = """
         INSERT INTO PlantOwnership(userID,plantID) VALUES(%s,%s) """ %(userID,plantID)
         rs.execute(statement)
@@ -371,6 +370,63 @@ class SQLClient:
             return
         print "The User was not in the database"
 
+    def plants_without_users(self):
+        """
+        Gets all of the plants without Users
+        """
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+        statement = """
+        SELECT P.plantID
+        FROM Plant P LEFT OUTER JOIN PlantOwnership O on P.plantID = O.plantID
+        WHERE O.userID IS NULL;
+        """
+
+        rs.execute(statement)
+        for pull in rs:
+            print pull
+        rs.close()
+        con.close()
+    def users_without_plants(self):
+        """
+        Gets all the users without plants
+        """
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+        statement = """
+        SELECT U.userID
+        FROM Users U LEFT OUTER JOIN PlantOwnership O on U.userID = O.userID
+        WHERE O.plantID IS NULL; """
+        rs.execute(statement)
+        for pull in rs:
+            print pull
+        rs.close()
+        con.close()
+
+    def users_with_most_plants(self):
+        """
+        Gets all the users without plants
+        """
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+        statement = """
+        SELECT O.userID
+        FROM PlantOwnership O
+        GROUP BY O.userID
+        HAVING COUNT(*) >= ALL(SELECT COUNT(*)
+                               FROM PlantOwnership O
+                               GROUP BY O.userID)
+        """
+
+        print "users with most plants"
+        rs.execute(statement)
+        for pull in rs:
+            print pull
+        rs.close()
+        con.close()
 
 if __name__ == '__main__':
     pass

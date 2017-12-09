@@ -1,3 +1,3 @@
 
 
-sshpass -p <Password ssh -o StrictHostKeyChecking=no <username>@ada.gonzaga.edu
+sshpass -p Ihatethiswebsite! ssh -o StrictHostKeyChecking=no mdulin2@ada.gonzaga.edu
