@@ -16,12 +16,7 @@ class SQLClient:
         """
         A function to test the SQL code in
         """
-        self.display_table("O")
-        self.add_user(1,"Van N.",3605080789)
-        self.add_ownership(1,4)
-        self.users_without_plants()
-        self.users_with_most_plants()
-
+        print(self.parse_val(self.display_table("P")))
     def display_table(self, table_start):
         """
         Displays the table
@@ -56,12 +51,16 @@ class SQLClient:
         statement = 'SELECT * FROM %s' % (table) # %s is the placeholder, table is the variable
         #might want to turn this into a prepared statement?
         rs.execute(statement)
-
+        text = ""
         for pull in rs:
-            print pull #displays in element in the database pull
+            text+=str(pull) #displays in element in the database pull
         rs.close()
         con.close()
+        return text
 
+##########################d
+#Additions to the database
+##########################
     def add_plant(self,plantType,building,area,plantName):
         """
         Adds a plant to the database with an auto increment key
@@ -77,15 +76,12 @@ class SQLClient:
         WHERE name = "%s";""" %(plantType)
         con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
                                       database=self.dab)
-        thirst = input("What is the thirst level of the plant?\n")
+
         rs = con.cursor(cursor_class=MySQLCursorPrepared)
         #makes sure the plantType exists. If not, it adds it.
         if(self.check(statement)== True):
-
-            statement = """
-            INSERT INTO PlantType(name,thirst)
-            VALUES("%s",%s);""" % (plantType,thirst)
-            rs.execute(statement)
+            thirst = input("What is the thirst level of the plant?\n")
+            add_plant_type(plantType,thirst)
 
         #gets the locationID
         statement = """
@@ -100,13 +96,13 @@ class SQLClient:
             for char in text:
                 if(char.isdigit()):
                     parse_location += char
-            print parse_location
 
         #gets the plantType ID
         statement = """
         SELECT ID
         FROM PlantType
-        WHERE name = "%s" AND thirst = %s;""" %(plantType,thirst)
+        WHERE name = "%s"
+        """ % (plantType)
         rs.execute(statement)
         parse_type = ""
         for (val) in rs:
@@ -114,19 +110,23 @@ class SQLClient:
             for char in text:
                 if(char.isdigit()):
                     parse_type += char
-            print parse_type
 
         statement = """
         INSERT INTO Plant(locationID,plantName,plantType)
         VALUES(%s,"%s","%s");""" % (parse_location,plantName,parse_type)
         rs.execute(statement)
+
+        plant_id = self.get_spot_in_table("Plant")
         con.commit()
         rs.close()
         con.close()
-
+        return plant_id
     def add_ownership(self,userID,plantID):
         """
-
+        Adds ownership of a plant to a user.
+        Args:
+            userID: the user to own the plant
+            plantID: the plant that is to be owned in the database
         """
         # create a connection
         con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
@@ -159,6 +159,7 @@ class SQLClient:
         statement = """
         INSERT INTO PlantOwnership(userID,plantID) VALUES(%s,%s) """ %(userID,plantID)
         rs.execute(statement)
+
         con.commit()
         rs.close()
         con.close()
@@ -199,6 +200,12 @@ class SQLClient:
         con.close()
 
     def add_plant_type(self,name,thirst):
+        """
+        Adds a particular type of plant to the database
+        Args:
+            name(string): the name of the plant type that is being added
+            thirst(int): the amount of times per month the plant needs to be watered
+        """
 
         # create a connection
         con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
@@ -221,27 +228,6 @@ class SQLClient:
         rs.close()
         con.close()
 
-    def check(self,query):
-        """
-        Checks to see if a set of values is already in the database
-        Args:
-            query: The query that is being tested
-        Returns:
-            True if the value is not in table, false otherwise
-        """
-        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
-                                      database=self.dab)
-        #checks to see if the plant type is already in the database
-        rs = con.cursor(cursor_class=MySQLCursorPrepared)
-        rs.execute(query)
-        text = None
-        for (val) in rs:
-            text = '{}'.format(val)
-
-        if(text == None):
-            return True
-        else:
-            return False
 
     def add_location(self,building,area):
         """
@@ -265,7 +251,7 @@ class SQLClient:
         #checks to see if the plant type is already in the database
         rs = con.cursor(cursor_class=MySQLCursorPrepared)
         statement = """
-        INSERT INTO Location(building,area) VALUES("%s",%s) """ %(building,area)
+        INSERT INTO Location(building,area) VALUES("%s","%s") """ %(building,area)
         rs.execute(statement)
         con.commit()
         rs.close()
@@ -294,6 +280,31 @@ class SQLClient:
         con.commit()
         rs.close()
         con.close()
+
+########################
+#Value constraint Checks
+########################
+    def check(self,query):
+        """
+        Checks to see if a set of values is already in the database
+        Args:
+            query: The query that is being tested
+        Returns:
+            True if the value is not in table, false otherwise
+        """
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        #checks to see if the plant type is already in the database
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+        rs.execute(query)
+        text = None
+        for (val) in rs:
+            text = '{}'.format(val)
+
+        if(text == None):
+            return True
+        else:
+            return False
 
     def make_check(self,name,value,table,value_or_string):
 
@@ -326,6 +337,9 @@ class SQLClient:
         else:
             return False
 
+###############################
+#Removing data from the database
+###############################
     def remove(self, table, ID,name):
         """
         Removes an entry from the database
@@ -345,10 +359,6 @@ class SQLClient:
         rs.close()
         con.close()
 
-    def parse_val(self, string):
-        print string
-        for char in string:
-            print char
 
     def remove_plant(self, plantID):
         """
@@ -370,6 +380,9 @@ class SQLClient:
             return
         print "The User was not in the database"
 
+###########################
+#Queries##
+###########################
     def plants_without_users(self):
         """
         Gets all of the plants without Users
@@ -413,20 +426,143 @@ class SQLClient:
                                       database=self.dab)
         rs = con.cursor(cursor_class=MySQLCursorPrepared)
         statement = """
-        SELECT O.userID
+        SELECT O.userID, COUNT(*)
         FROM PlantOwnership O
         GROUP BY O.userID
         HAVING COUNT(*) >= ALL(SELECT COUNT(*)
-                               FROM PlantOwnership O
-                               GROUP BY O.userID)
+                               FROM PlantOwnership O1
+                               GROUP BY O1.userID)
         """
-
-        print "users with most plants"
         rs.execute(statement)
         for pull in rs:
             print pull
         rs.close()
         con.close()
 
+    def get_users_plants(self, userID):
+        """
+        Gets the names of all the users plants
+        Args:
+            userID: the ID of the user.
+        """
+        # create a connection
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        #checks to see if the plant type is already in the database
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+        statement = """
+        SELECT *
+        FROM Users
+        WHERE userID = %s;""" %(userID)
+        if(self.check(statement)== True):
+            print "User not in the database."
+            return
+
+        statement = """
+        SELECT P.plantName
+        FROM PlantOwnership O, Plant P
+        WHERE O.plantID = P.plantID AND O.userID = %s""" %(userID)
+        rs.execute(statement)
+
+        for pull in rs:
+            print pull
+        rs.close()
+        con.close()
+
+
+
+#####################
+#Miscellenous functions
+######################
+    def parse_val(self, string):
+        """
+        Parses the SQL query output for the user to be able to see
+        Args:
+            string(string or tuple): the query to be parsed
+        Returns:
+            string(string): a string with the parsed queries
+        """
+        #string = "(bytearray(b'48755'), 4)"
+        string = str(string)
+        string = string.replace("bytearray(b'","")
+        string = string.replace("bytearray(b","")
+        string = string.replace("')","")
+        string = string.replace(")(","),(")
+        return string
+
+    def add_values(self,number):
+        """
+        Adds a ton of values to the database
+        """
+        name_list = ["Jill Tom","Joe Wagner","Jacon Krantz","Celeste hatfield", "Swarely"]
+        plant_list = ["Lily","Tree3","Tullip","bark"]
+        location_list = ["Herak","PACCAR","College Hall","Thaynes House","Hughes","Coughlin"]
+        area = ["Room 313","Down the hallway","The sketchEvator","room 100","Depalma's Office"]
+        for i in range(number):
+            userID = rand.randint(0,2453255)
+            user_name = name_list[i % 5]
+            phone_number = rand.randint(0,5256784543)
+            self.add_user(userID,user_name,phone_number)
+            plant_name = plant_list[i % 4]
+            location_name = location_list[i % 6]
+            area_name = area[i % 5]
+            plantID = self.add_plant(plant_list[i% 4], plant_name,location_name,area_name)
+            self.add_ownership(user_name,plantID)
+
+    def get_spot_in_table(self,table):
+        """
+        Returns the AUTO_INCREMENT ID of a table
+        Args:
+            table(string): the name of the table to find the ID for
+        """
+        # create a connection
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        #checks to see if the plant type is already in the database
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+
+        statement = """
+        SELECT `AUTO_INCREMENT`
+        FROM INFORMATION_SCHEMA.TABLES
+        WHERE TABLE_SCHEMA = 'mdulin2_DB' AND TABLE_NAME = '%s'"""%(table)
+        rs.execute(statement)
+
+        val = str(rs.fetchall())
+        string = ""
+        for char in val:
+            if char.isdigit():
+                string += char
+        con.commit()
+        rs.close()
+        con.close()
+        return string
+
+    def get_spot_in_table(self,table):
+        """
+        Returns the AUTO_INCREMENT ID of a table
+        Args:
+            table(string): the name of the table to find the ID for
+        """
+        # create a connection
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        #checks to see if the plant type is already in the database
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+
+        statement = """
+        SELECT `AUTO_INCREMENT`
+        FROM INFORMATION_SCHEMA.TABLES
+        WHERE TABLE_SCHEMA = 'mdulin2_DB' AND TABLE_NAME = '%s'"""%(table)
+        rs.execute(statement)
+
+        val = str(rs.fetchall())
+        string = ""
+        for char in val:
+            if char.isdigit():
+                string += char
+        con.commit()
+        rs.close()
+        con.close()
+        return string
 if __name__ == '__main__':
     pass
