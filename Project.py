@@ -17,6 +17,8 @@ class SQLClient:
         A function to test the SQL code in
         """
         print(self.parse_val(self.display_table("P")))
+
+        self.add_values(100)
     def display_table(self, table_start):
         """
         Displays the table
@@ -112,15 +114,15 @@ class SQLClient:
                     parse_type += char
 
         statement = """
-        INSERT INTO Plant(locationID,plantName,plantType)
-        VALUES(%s,"%s","%s");""" % (parse_location,plantName,parse_type)
+        INSERT INTO Plant(locationID,plantName,plantType) VALUES
+        (%s,"%s","%s");""" % (parse_location,plantName,parse_type)
         rs.execute(statement)
 
         plant_id = self.get_spot_in_table("Plant")
         con.commit()
         rs.close()
         con.close()
-        return plant_id
+        return int(plant_id) -1
     def add_ownership(self,userID,plantID):
         """
         Adds ownership of a plant to a user.
@@ -326,7 +328,7 @@ class SQLClient:
             statement = 'SELECT %s FROM %s WHERE %s = %s;' % (name,table,name,value)
         else:
             statement = 'SELECT %s FROM %s WHERE %s = "%s";' % (name,table,name,value)
-        print (statement)
+
         rs.execute(statement)
 
         text = None
@@ -501,13 +503,13 @@ class SQLClient:
         for i in range(number):
             userID = rand.randint(0,2453255)
             user_name = name_list[i % 5]
-            phone_number = rand.randint(0,5256784543)
+            phone_number = rand.randint(0,5256784589)
             self.add_user(userID,user_name,phone_number)
             plant_name = plant_list[i % 4]
             location_name = location_list[i % 6]
             area_name = area[i % 5]
             plantID = self.add_plant(plant_list[i% 4], plant_name,location_name,area_name)
-            self.add_ownership(user_name,plantID)
+            self.add_ownership(userID,plantID)
 
     def get_spot_in_table(self,table):
         """
