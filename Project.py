@@ -16,40 +16,17 @@ class SQLClient:
         A function to test the SQL code in
         """
 
-        self.add_water_event(48755,2)
-        #self.disply_table("P")
-        #self.disply_table("U")
-        self.disply_table("W")
+        #self.add_plant("tree_top","herak","Room 324","Kitty top")
+        self.display_table("P")
 
-    def get_plants(self):
-        """
-        Gets all of the plants
-        Returns:
-            A list of all the plant id's
-        """
+        self.add_ownership(48755,3)
+        self.display_table("U")
 
-        try:
-            con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
-                                          database=self.dab) #connection
+        #self.add_plant("Kitten","herak","Room 324","Possums")
 
-            rs = con.cursor(cursor_class=MySQLCursorPrepared) #changing the type of cursor
-            query = 'SELECT plantID,locationID FROM Plant;' #the query itself
-            rs.execute(query) #executing the query
-            # create a result set
-            plants_list = []
-            text = ""
-            #iterating through the database
-            for (plantID,locationID) in rs:
-                text = '{},{}'.format(plantID,locationID)
-                plants_list.append(text[0])
 
-            rs.close() #close the cursor
-            con.close() #close the connection
-            return plants_list
-        except mysql.connector.Error as err:
-            print("come on! ")
 
-    def disply_table(self, table_start):
+    def display_table(self, table_start):
         """
         Displays the table
         Args:
@@ -89,28 +66,69 @@ class SQLClient:
         rs.close()
         con.close()
 
-    def add_plant(self,plantType,locationID,plantName):
+    def add_plant(self,plantType,building,area,plantName):
         """
         Adds a plant to the database with an auto increment key
         Args:
 
         """
-        #need to check to see if the PlantType is in here
-
-        # create a connection
+        statement = """
+        SELECT *
+        FROM PlantType
+        WHERE name = "%s";""" %(plantType)
         con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
                                       database=self.dab)
-
+        thirst = input("What is the thirst level of the plant?\n")
         rs = con.cursor(cursor_class=MySQLCursorPrepared)
+        #makes sure the plantType exists. If not, it adds it.
+        if(self.check(statement)== True):
+
+            statement = """
+            INSERT INTO PlantType(name,thirst)
+            VALUES("%s",%s);""" % (plantType,thirst)
+            rs.execute(statement)
+
+        statement = """
+        SELECT locationID
+        FROM Location
+        WHERE building = "%s" AND area = "%s";""" %(building,area)
+        self.add_location(building,area)
+        rs.execute(statement)
+        parse_location = ""
+        for (val) in rs:
+            text = '{}'.format(val)
+            for char in text:
+                if(char.isdigit()):
+                    parse_location += char
+            print parse_location
+
+        statement = """
+        SELECT ID
+        FROM PlantType
+        WHERE name = "%s" AND thirst = %s;""" %(plantType,thirst)
+        rs.execute(statement)
+        parse_type = ""
+        for (val) in rs:
+            text = '{}'.format(val)
+            for char in text:
+                if(char.isdigit()):
+                    parse_type += char
+            print parse_type
+        #need to check to see if the PlantType is in here
         statement = """
         INSERT INTO Plant(locationID,plantName,plantType)
-        VALUES(%s,"%s","%s");""" % (locationID,plantName,plantType)
+        VALUES(%s,"%s","%s");""" % (parse_location,plantName,parse_type)
         rs.execute(statement)
+
+
         con.commit()
         rs.close()
         con.close()
 
-    def add_water_event(self,userID,plantID):
+    def add_ownership(self,userID,plantID):
+        """
+
+        """
         # create a connection
         con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
                                       database=self.dab)
@@ -131,6 +149,48 @@ class SQLClient:
         if(self.check(statement)== True):
             print "user not in database"
             return
+
+        statement = """
+        SELECT * FROM PlantOwnership
+        WHERE userID = %s AND plantID = %s """ %(userID,plantID)
+        if(self.check(statement) == False):
+            print "The relationship already exists!"
+            return
+
+        statement = """
+        INSERT INTO PlantOwnership(userID,plantID) VALUES(%s,%s) """ %(userID,plantID)
+        rs.execute(statement)
+        con.commit()
+        rs.close()
+        con.close()
+
+    def add_water_event(self,userID,plantID):
+        """
+
+        """
+        # create a connection
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        #checks to see if the plant type is already in the database
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+
+        #checks to see if a plant is in the database
+        statement = """
+        SELECT *
+        FROM Plant
+        WHERE plantID = %s;""" %(plantID)
+        if(self.check(statement)== True):
+            print("plant not in database")
+            return
+
+        statement = """
+        SELECT *
+        FROM Users
+        WHERE userID = %s;""" %(userID)
+        if(self.check(statement)== True):
+            print "user not in database"
+            return
+
 
         statement = """
         INSERT INTO WaterEvent(userID,plantID) VALUES("%s",%s) """ %(userID,plantID)
@@ -178,7 +238,7 @@ class SQLClient:
         text = None
         for (val) in rs:
             text = '{}'.format(val)
-        print "text: ",text
+
         if(text == None):
             return True
         else:
@@ -266,6 +326,50 @@ class SQLClient:
             return True
         else:
             return False
+
+    def remove(self, table, ID,name):
+        """
+        Removes an entry from the database
+        Args:
+            table: the table to delete from
+            ID: the id of the value we need to delete
+            name: name of the attribute to test on
+        """
+        statement = """
+        DELETE FROM %s
+        WHERE %s = %s """ %(table,name,ID)
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+        rs.execute(statement)
+        con.commit()
+        rs.close()
+        con.close()
+
+    def parse_val(self, string):
+        print string
+        for char in string:
+            print char
+
+    def remove_plant(self, plantID):
+        """
+        Removes the plant from the database
+        Args:
+            plantID: the plant ID
+        """
+        if(self.check("SELECT * FROM Plant WHERE plantID = %s" % plantID) == False):
+            self.remove("Plant",plantID,"plantID")
+
+    def remove_user(self, userID):
+        """
+        Removes a user from the database
+        Args:
+            userID: the user to be removed
+        """
+        if(self.check("SELECT * FROM Users WHERE userID = %s" % userID) == False):
+            self.remove("Users",userID, "userID")
+            return
+        print "The User was not in the database"
 
 
 if __name__ == '__main__':
