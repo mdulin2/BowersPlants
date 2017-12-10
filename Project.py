@@ -1,4 +1,3 @@
-
 import mysql.connector
 from mysql.connector.cursor import MySQLCursorPrepared
 import config
@@ -361,7 +360,6 @@ class SQLClient:
         rs.close()
         con.close()
 
-
     def remove_plant(self, plantID):
         """
         Removes the plant from the database
@@ -382,7 +380,78 @@ class SQLClient:
             self.remove("Users",userID, "userID")
             return
         print "The User was not in the database"
+    
+    def remove_plant_ownership(self, plantID):
+        if(self.check("SELECT * FROM PlantOwnership WHERE plantID = %s" % plantID) == False):
+            statement = """
+            DELETE FROM PlantOwnership WHERE plantID = %s
+            """ %(plantID)
+            con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+            rs = con.cursor(cursor_class=MySQLCursorPrepared)
+            rs.execute(statement)
+            con.commit()
+            rs.close()
+            con.close()
+            return
+        print("The Plant was not in the database")
 
+#####################
+# Update database functions
+#####################
+
+    def update_user_info(self, table, column, value, ID):
+         con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+         rs = con.cursor(cursor_class=MySQLCursorPrepared)
+         statement = """
+         SELECT *
+         FROM Users
+         WHERE userID = %s;""" %(ID)
+         if(self.check(statement)== True):
+             print "User not in the database."
+             return
+         statement = """
+         UPDATE %s
+         SET %s = %s
+         WHERE userID = %s"""%(table, column, value, ID)
+         rs.execute(statement)
+
+         for pull in rs:
+             print pull
+         con.commit()
+         rs.close()
+         con.close()
+
+    def update_plant_location(self, plantID, building, area):
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+        #gets the locationID
+        if(self.check("SELECT * FROM Plant WHERE plantID = %s" % plantID) == False):
+            statement = """
+            SELECT locationID
+            FROM Location
+            WHERE building = "%s" AND area = "%s";""" %(building,area)
+            self.add_location(building,area)
+            rs.execute(statement)
+            parse_location = ""
+            for (val) in rs:
+                text = '{}'.format(val)
+                for char in text:
+                    if(char.isdigit()):
+                        parse_location += char
+            statement = """
+            UPDATE Plant
+            SET locationID = %s
+            WHERE plantID = %s;
+            """ %(parse_location, plantID)
+            rs.execute(statement)
+            con.commit()
+            rs.close()
+            con.close()
+            return
+        print("Plant does not exist")
 ###########################
 #Queries##
 ###########################
@@ -473,12 +542,53 @@ class SQLClient:
             print pull
         rs.close()
         con.close()
-
+      
+    def get_user(self, userID):
+        # create a connection
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        #checks to see if the plant type is already in the database
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+        statement = """
+        SELECT *
+        FROM Users
+        WHERE userID = %s;""" %(userID)
+        if(self.check(statement)== True):
+            print "User not in the database."
+            return
+        rs.execute(statement)
+        text = ""
+        for pull in rs:
+            text += str(pull)
+        rs.close()
+        con.close()
+        return text
+    
+    def get_dead_plants(self):
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        #checks to see if the plant type is already in the database
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+        statement = """
+        SELECT p.plantID, p.plantName
+        FROM Plant p LEFT OUTER JOIN WaterEvent w USING (plantID)
+        WHERE w.plantID IS NULL
+        """
+        if(self.check(statement) == True):
+            print("No dead plants were found")
+            return
+        rs.execute(statement)
+        text = ""
+        for pull in rs:
+            text += str(pull)
+        rs.close()
+        con.close()
+        return text
 
 
 #####################
-#Miscellenous functions
-######################
+# Miscellaneous functions
+#####################
     def parse_val(self, string):
         """
         Parses the SQL query output for the user to be able to see
@@ -511,7 +621,7 @@ class SQLClient:
             plant_name = plant_list[i % 4]
             location_name = location_list[i % 6]
             area_name = area[i % 5]
-            plantID = self.add_plant(plant_list[i% 4], plant_name,location_name,area_name)
+            plantID = self.add_plant(plant_list[i % 4],location_name,area_name,plant_name)
             self.add_ownership(userID,plantID)
 
     def get_spot_in_table(self,table):

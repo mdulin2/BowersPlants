@@ -42,7 +42,8 @@ class User:
 		
 		if(selection == 1):
 			#view account info
-			pass
+			userID = input("Enter you user ID: ")
+			print(self.queries.parse_val(self.queries.get_user(userID)))
 			
 		elif(selection == 2):
 			#edit account info
@@ -60,8 +61,8 @@ class User:
 		print ("1. Add plant")
 		print("2. Remove plant")
 		print("3. Add new watering timestamp")
-		print("4. Edit plant info")
-		print("5. Change plant location")
+		print("4. Change plant location")
+		print("5. Remove plant ownership")
 		
 		selection = input("Select an option (1-5): ")
 		
@@ -94,37 +95,46 @@ class User:
 			
 		
 		elif(selection == 4):
-			# Edit plant info
-			pass
+			# Change plant location
+			plantID = input("Enter the plant ID: ")
+			building = raw_input("Enter the plant's building: ")
+			area = raw_input("Enter the plant's area: ")
+			self.queries.update_plant_location(plantID, building, area)
+			print("Plant location changed")
 		
 		elif(selection == 5):
-			# Change plant location
-			pass
+			# Remove plant ownership
+			plantID = input("Enter the plantID: ")
+			self.queries.remove_plant_ownership(plantID)
+			print("Plant ownership removed")
 			
 	def editAccount(self):
 		print("")
+		print("Edit Account Info")
 		print("1. Change phone number")
 		print("2. Change name")
-		print("3. Change email")
-		print("4. Change password")
-		
-		selection = input("Select an option (1-4): ")
+
+		selection = input("Select an option (1-2): ")
 		
 		if(selection == 1):
 			# Change phone number
-			pass
-		
+			table = "Users"
+			column = "phoneNumber"
+			id = input("Enter your user ID: ")
+			newValue = input("Enter your new phone number: ")
+			self.queries.update_user_info(table, column, newValue, id)
+			print("Phone number has been updated")
+			
 		elif(selection == 2):
 			# change name
-			pass
-		
-		elif(selection == 3):
-			#change email
-			pass
-		
-		elif(selection == 4):
-			#change password
-			pass
+			table = "Users"
+			column = "name"
+			id = raw_input("Enter your user ID: ")
+			newName = "'"
+			newName += raw_input("Enter your new name: ")
+			newName += "'"
+			self.queries.update_user_info(table, column, newName, id)
+	
 		
 	def advancedOptions(self):
 		print("")
@@ -137,8 +147,10 @@ class User:
 		print("6. Find the day with the most watering events")
 		print("7. Find the week with the most watering events")
 		print("8. Find a user's past watering events within a frame of time")
+		print("9. Find a user's plants")
+		print("10. Find plants that have never been watered")
 		
-		selection = input("Select an option (1-8): ")
+		selection = input("Select an option (1-10): ")
 		
 		if(selection == 1):
 			# find plants without users
@@ -171,6 +183,14 @@ class User:
 		elif(selection == 8):
 			# find a user's past watering events within a frame of time
 			pass
+		
+		elif(selection == 9):
+			# find a user's plants
+			pass
+			
+		elif(selection == 10):
+			# find unwatered plants
+			print(self.queries.parse_val(self.queries.get_dead_plants()))
 
 if __name__ == '__main__': #runs if it's the main function being called
 	Y = User()
