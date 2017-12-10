@@ -560,14 +560,14 @@ class SQLClient:
         #checks to see if the plant type is already in the database
         rs = con.cursor(cursor_class=MySQLCursorPrepared)
 
-        """
+
         statement = """
-        #SELECT COUNT(*)
-        #FROM WaterEvent W
-        #WHERE W.plantID = %s
+        SELECT COUNT(*)
+        FROM WaterEvent W
+        WHERE W.plantID = %s
         """ % (plantID)
         rs.execute(statement)
-        val = str(rs.fetchall())
+        amount_queries = str(rs.fetchall())
         string = ""
         for char in val:
             if char.isdigit():
@@ -582,7 +582,7 @@ class SQLClient:
         """%(plantID)
 
         rs.execute(statement)
-        val = str(rs.fetchall())
+        min_date = str(rs.fetchall())
         string = ""
         for char in val:
             if char.isdigit():
