@@ -18,7 +18,7 @@ class SQLClient:
         """
         print(self.parse_val(self.display_table("P")))
 
-        self.add_values(100)
+        #self.add_values(100)
     def display_table(self, table_start):
         """
         Displays the table
@@ -370,6 +370,7 @@ class SQLClient:
         """
         if(self.check("SELECT * FROM Plant WHERE plantID = %s" % plantID) == False):
             self.remove("Plant",plantID,"plantID")
+        print "The Plant is not in the database."
 
     def remove_user(self, userID):
         """
@@ -385,6 +386,7 @@ class SQLClient:
 ###########################
 #Queries##
 ###########################
+
     def plants_without_users(self):
         """
         Gets all of the plants without Users
@@ -403,6 +405,7 @@ class SQLClient:
             print pull
         rs.close()
         con.close()
+        
     def users_without_plants(self):
         """
         Gets all the users without plants
