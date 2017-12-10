@@ -16,9 +16,12 @@ class SQLClient:
         """
         A function to test the SQL code in
         """
-        print(self.parse_val(self.display_table("P")))
+        #self.format_output(self.parse_val(self.display_table("L")))
+        #print self.format_output(self.parse_val(self.building_most_plants()))
+        #self.watering_events(12,1,12,8,48755)
+        self.most_watering_events()
+        self.is_plant_watered(1)
 
-        #self.add_values(100)
     def display_table(self, table_start):
         """
         Displays the table
@@ -405,7 +408,7 @@ class SQLClient:
             print pull
         rs.close()
         con.close()
-        
+
     def users_without_plants(self):
         """
         Gets all the users without plants
@@ -435,8 +438,8 @@ class SQLClient:
         FROM PlantOwnership O
         GROUP BY O.userID
         HAVING COUNT(*) >= ALL(SELECT COUNT(*)
-                               FROM PlantOwnership O1
-                               GROUP BY O1.userID)
+                               FROM PlantOwnership O
+                               GROUP BY O.userID)
         """
         rs.execute(statement)
         for pull in rs:
@@ -474,6 +477,117 @@ class SQLClient:
         rs.close()
         con.close()
 
+    def building_most_plants(self):
+        """
+        Returns the user with the most plants.
+        """
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+        statement = """
+        SELECT L.building,L.area, COUNT(*)
+        FROM Location L, Plant P
+        WHERE L.locationID = P.locationID
+        GROUP BY L.locationID
+        HAVING COUNT(*) <= ALL(SELECT COUNT(*)
+                               FROM Plant P
+                               GROUP BY P.locationID) """
+        rs.execute(statement)
+        text = ""
+        for pull in rs:
+            text += str(pull)
+        rs.close()
+        con.close()
+        return text
+
+    def find_watering_events(self,begin_month,begin_day,end_month,end_day,userID):
+        """
+        Gets the watering events within a given time frame for a user
+        Args:
+            begin_month(int): the beginning month.
+            begin_day(int): the begining day.
+            end_month(int): the end month
+            end_day(int): the end day
+            userID(int): the user id being searched on.
+        Returns:
+            All the watering events for a user.
+        """
+        # create a connection
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        #checks to see if the plant type is already in the database
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+        statement = """
+        SELECT *
+        FROM WaterEvent W
+        WHERE W.timeWatered >= '2017-%s-%s 00:00:00' AND W.timeWatered < '2017-%s-%s 00:00:00'
+        AND %s = W.userID
+        """ % (begin_month,begin_day,end_month,end_day,userID)
+        rs.execute(statement)
+        val = str(rs.fetchall())
+        string = ""
+        for char in val:
+            string += char
+        con.commit()
+        rs.close()
+        con.close()
+        return string
+
+    def most_watering_events(self):
+        """
+        Returns the day with the most watering events
+        """
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+        statement = """
+        SELECT DATE(timeWatered)
+        FROM WaterEvent W
+        GROUP BY YEAR(timeWatered),MONTH(timeWatered),DAY(timeWatered)
+        HAVING COUNT(*) >= ALL(
+                SELECT COUNT(*)
+                FROM WaterEvent W
+                GROUP BY YEAR(timeWatered),MONTH(timeWatered),DAY(timeWatered))
+        """
+        rs.execute(statement)
+        date = str(rs.fetchall())
+        return date
+
+    def is_plant_watered(self,plantID):
+        # create a connection
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        #checks to see if the plant type is already in the database
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+
+        """
+        statement = """
+        #SELECT COUNT(*)
+        #FROM WaterEvent W
+        #WHERE W.plantID = %s
+        """ % (plantID)
+        rs.execute(statement)
+        val = str(rs.fetchall())
+        string = ""
+        for char in val:
+            if char.isdigit():
+                string += char
+        print string
+        """
+
+        statement = """
+        SELECT MIN(DATE(W.timeWatered))
+        FROM WaterEvent W
+        WHERE %s = W.plantID
+        """%(plantID)
+
+        rs.execute(statement)
+        val = str(rs.fetchall())
+        string = ""
+        for char in val:
+            if char.isdigit():
+                string += char
+        print string
 
 
 #####################
@@ -511,7 +625,7 @@ class SQLClient:
             plant_name = plant_list[i % 4]
             location_name = location_list[i % 6]
             area_name = area[i % 5]
-            plantID = self.add_plant(plant_list[i% 4], plant_name,location_name,area_name)
+            plantID = self.add_plant(plant_list[i% 4],location_name,area_name, plant_name)
             self.add_ownership(userID,plantID)
 
     def get_spot_in_table(self,table):
@@ -542,32 +656,15 @@ class SQLClient:
         con.close()
         return string
 
-    def get_spot_in_table(self,table):
+    def format_output(self, output):
         """
-        Returns the AUTO_INCREMENT ID of a table
-        Args:
-            table(string): the name of the table to find the ID for
+        Returns a list of the output into a iterable object.
         """
-        # create a connection
-        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
-                                      database=self.dab)
-        #checks to see if the plant type is already in the database
-        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+        output = output.replace("(","")
+        output = output.replace(",","")
+        output = output.split(")")
 
-        statement = """
-        SELECT `AUTO_INCREMENT`
-        FROM INFORMATION_SCHEMA.TABLES
-        WHERE TABLE_SCHEMA = 'mdulin2_DB' AND TABLE_NAME = '%s'"""%(table)
-        rs.execute(statement)
+        return output
 
-        val = str(rs.fetchall())
-        string = ""
-        for char in val:
-            if char.isdigit():
-                string += char
-        con.commit()
-        rs.close()
-        con.close()
-        return string
 if __name__ == '__main__':
     pass
