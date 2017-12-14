@@ -17,8 +17,8 @@ class SQLClient:
         """
         A function to test the SQL code in
         """
-        #self.add_values(200
-
+        self.remove_plant_ownership(1,1)
+        #self.add_ownership(1,1)
 
         #self.add_values(100)
     def display_table(self, table_start):
@@ -125,6 +125,7 @@ class SQLClient:
         rs.close()
         con.close()
         return int(plant_id) -1
+
     def add_ownership(self,userID,plantID):
         """
         Adds ownership of a plant to a user.
@@ -391,14 +392,14 @@ class SQLClient:
             return
         print "The User was not in the database"
 
-    def remove_plant_ownership(self, plantID):
+    def remove_plant_ownership(self,userID, plantID):
         '''
         ??
         '''
         if(self.check("SELECT * FROM PlantOwnership WHERE plantID = %s" % plantID) == False):
             statement = """
-            DELETE FROM PlantOwnership WHERE plantID = %s
-            """ %(plantID)
+            DELETE FROM PlantOwnership WHERE plantID = %s AND userID = %s
+            """ %(plantID,userID)
             con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
                                       database=self.dab)
             rs = con.cursor(cursor_class=MySQLCursorPrepared)
@@ -414,6 +415,15 @@ class SQLClient:
 #####################
 
     def update_user_info(self, table, column, value, ID):
+        """
+        Updates the user info in a general fashion
+        Args:
+            table: the table being updated
+            column: the column being updated
+            value: the value to being changed in column
+            ID: the reference for the value
+        """
+
          con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
                                       database=self.dab)
          rs = con.cursor(cursor_class=MySQLCursorPrepared)
@@ -424,6 +434,7 @@ class SQLClient:
          if(self.check(statement)== True):
              print "User not in the database."
              return
+
          statement = """
          UPDATE %s
          SET %s = %s
@@ -830,5 +841,6 @@ class SQLClient:
         rs.close()
         con.close()
         return string
+    
 if __name__ == '__main__':
     pass

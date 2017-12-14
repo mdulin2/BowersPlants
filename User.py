@@ -6,7 +6,7 @@ class User:
 	"""
 	def __init__(self):
 		self.queries = SQLClient()
-
+		self.queries.test()
 		running = True
 		print("Welcome!")
 		while(running == True):
@@ -15,7 +15,7 @@ class User:
 			print("2. Plant Info")
 			print("3. Advanced Options")
 			print("4. Quit")
-			selection = input("Select an option (1-4): ")
+			selection = int(raw_input("Select an option (1-4): "))
 
 			if(selection == 1):
 				self.userInfo()
@@ -64,14 +64,14 @@ class User:
 		print("4. Change plant location")
 		print("5. Remove plant ownership")
 
-		selection = raw_input("Select an option (1-5): ")
+		selection = int(raw_input("Select an option (1-5): "))
 
 		if(selection == 1):
 			# add plant
 			plantType = raw_input("What is the plant type? ")
 			building = raw_input("What building is the plant in? ")
 			area = raw_input("What area in the building is the plant located? ")
-			plantName = ("What is the name of the plant? ")
+			plantName = raw_input("What is the name of the plant? ")
 
 			self.queries.add_plant(plantType, building, area, plantName)
 
@@ -88,8 +88,8 @@ class User:
 
 		elif(selection == 3):
 			# Add new watering timestamp
-			userId = raw_input("raw_input user ID: ")
-			plantId = raw_input("raw_input plant ID: ")
+			userId = raw_input("Input user ID: ")
+			plantId = raw_input("Input plant ID: ")
 			self.queries.add_water_event(userId, plantId)
 			print("Timestamp added")
 
@@ -97,8 +97,8 @@ class User:
 		elif(selection == 4):
 			# Change plant location
 			plantID = raw_input("Enter the plant ID: ")
-			building = raw_raw_input("Enter the plant's building: ")
-			area = raw_raw_input("Enter the plant's area: ")
+			building = raw_input("Enter the plant's building: ")
+			area = raw_input("Enter the plant's area: ")
 			self.queries.update_plant_location(plantID, building, area)
 			print("Plant location changed")
 
@@ -114,7 +114,7 @@ class User:
 		print("1. Change phone number")
 		print("2. Change name")
 
-		selection = raw_input("Select an option (1-2): ")
+		selection = int(raw_input("Select an option (1-2): "))
 
 		if(selection == 1):
 			# Change phone number
@@ -129,9 +129,9 @@ class User:
 			# change name
 			table = "Users"
 			column = "name"
-			id = raw_raw_input("Enter your user ID: ")
+			id = raw_input("Enter your user ID: ")
 			newName = "'"
-			newName += raw_raw_input("Enter your new name: ")
+			newName += raw_input("Enter your new name: ")
 			newName += "'"
 			self.queries.update_user_info(table, column, newName, id)
 
@@ -150,7 +150,7 @@ class User:
 		print("9. Find a user's plants")
 		print("10. Find plants that have never been watered")
 
-		selection = raw_input("Select an option (1-10): ")
+		selection = int(raw_input("Select an option (1-10): "))
 
 		if(selection == 1):
 			# find plants without users
@@ -194,6 +194,7 @@ class User:
 
 if __name__ == '__main__': #runs if it's the main function being called
 	Y = User()
+	
 	'''
 	INSERT INTO WaterEvent(waterID,plantID,userID,timeWatered)
 	 VALUES(1000000,157,48755,'1996-11-11 06:14:00');
