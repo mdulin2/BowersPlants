@@ -17,12 +17,9 @@ class SQLClient:
         """
         A function to test the SQL code in
         """
-        #self.remove_plant_ownership(1,1)
-        for i in range(200):
-            #self.add_plant(i)
-            self.add_ownership(1,i)
+        print(self.most_watering_events())
 
-        #self.add_values(100)
+
     def display_table(self, table_start):
         """
         Displays the table
@@ -677,7 +674,7 @@ class SQLClient:
                                       database=self.dab)
         rs = con.cursor(cursor_class=MySQLCursorPrepared)
         statement = """
-        SELECT DATE(timeWatered)
+        SELECT YEAR(timeWatered),MONTH(timeWatered),DAY(timeWatered)
         FROM WaterEvent W
         GROUP BY YEAR(timeWatered),MONTH(timeWatered),DAY(timeWatered)
         HAVING COUNT(*) >= ALL(
@@ -686,8 +683,13 @@ class SQLClient:
                 GROUP BY YEAR(timeWatered),MONTH(timeWatered),DAY(timeWatered))
         """
         rs.execute(statement)
-        date = str(rs.fetchall())
-        return date
+        text = ""
+        print "Year, Month, Day"
+        for (year,month,day) in rs:
+            print '{},{},{}'.format(year,month,day)
+        print text
+        #date = str(rs.fetchall())
+
 
     def is_plant_watered(self,plantID):
         """
@@ -736,6 +738,7 @@ class SQLClient:
         #gets the date of the first time the plant was watered
         first_date = string[4]+string[5]+"/" + string[6] + string[7] + "/"+string[0] + string[1] + string[2] + string[3]
         #gets the current date
+
         now = datetime.datetime.now()
         print "wC", water_count, thirst
         days_survive = int(water_count)* int(thirst)
@@ -743,7 +746,7 @@ class SQLClient:
         print "New date: ",date
 
         if(now > date):
-            print "needs to be watered"
+            print "Needs to Be Watered."
             return False
         else:
             print "Good work!"
