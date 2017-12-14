@@ -24,7 +24,7 @@ CREATE TABLE PlantType(
 	thirst int, /* How many times a mounth a plant needs to be watered */
 	PRIMARY KEY(ID)
 )ENGINE=InnoDB DEFAULT CHARSET=latin1;
-	
+
 /*Keeps track of each plant in the database */
 CREATE TABLE Plant (
   plantID int NOT NULL AUTO_INCREMENT,
@@ -61,22 +61,22 @@ CREATE TABLE PlantOwnership(
 	userID int NOT NULL,
 	plantID int NOT NULL,
 	PRIMARY KEY(userID, plantID),
-	FOREIGN KEY(userID) REFERENCES Users(userID) 
+	FOREIGN KEY(userID) REFERENCES Users(userID) ON DELETE CASCADE,
 	FOREIGN KEY(plantID) REFERENCES Plant(plantID) ON DELETE CASCADE
 )ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 
 
-	
+
 INSERT INTO PlantType(name,thirst)
 	VALUES("Fern",10);
-	
+
 INSERT INTO PlantType(name,thirst)
 	VALUES("tree1",2);
-	
+
 INSERT INTO PlantType(name,thirst)
 	VALUES("tree1",20);
-	
+
 /* Insert test values */
 INSERT INTO Location(Building,Area)
 	VALUES("Herak","Room 324");
@@ -88,12 +88,12 @@ INSERT INTO Plant(locationID,plantName,plantType)
 	VALUES(1,"Fern",2);
 INSERT INTO Plant(locationID, plantName,plantType)
 	VALUES(2, "Botany",3);
-	
+
 INSERT INTO Users VALUES
 	(48755,"Maxwell Dulin","3605085170","User");
-	
+
 INSERT INTO WaterEvent(plantID,userID)
 	VALUES(1,48755);
-	
+
 INSERT INTO PlantOwnership VALUES
 	(48755,1);

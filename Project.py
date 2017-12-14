@@ -3,6 +3,7 @@ import mysql.connector
 from mysql.connector.cursor import MySQLCursorPrepared
 import config
 import random as rand
+import datetime
 
 class SQLClient:
     def __init__(self):
@@ -16,7 +17,8 @@ class SQLClient:
         """
         A function to test the SQL code in
         """
-        self.is_plant_watered(1)
+        #self.add_values(200
+
 
         #self.add_values(100)
     def display_table(self, table_start):
@@ -83,7 +85,7 @@ class SQLClient:
         #makes sure the plantType exists. If not, it adds it.
         if(self.check(statement)== True):
             thirst = input("What is the thirst level of the plant?\n")
-            add_plant_type(plantType,thirst)
+            self.add_plant_type(plantType,thirst)
 
         #gets the locationID
         statement = """
@@ -168,7 +170,10 @@ class SQLClient:
 
     def add_water_event(self,userID,plantID):
         """
-
+        Adds a single watering to the database
+        Args:
+            userID(int): the user who watered the plant
+            plantID(int): the plant that is being watered
         """
         # create a connection
         con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
@@ -219,8 +224,11 @@ class SQLClient:
         FROM PlantType T
         WHERE T.name = "%s"
         and T.thirst = %s; """ %(name,thirst)
-        rs.execute(statement)
+        #rs.execute(statement)
         if(self.check(statement)== False):
+            con.commit()
+            rs.close()
+            con.close()
             return
 
         statement = """
@@ -384,6 +392,9 @@ class SQLClient:
         print "The User was not in the database"
 
     def remove_plant_ownership(self, plantID):
+        '''
+        ??
+        '''
         if(self.check("SELECT * FROM PlantOwnership WHERE plantID = %s" % plantID) == False):
             statement = """
             DELETE FROM PlantOwnership WHERE plantID = %s
@@ -666,7 +677,9 @@ class SQLClient:
 
     def is_plant_watered(self,plantID):
         """
-
+        Returns true if a plant has been watered enough, false otherwise
+        Args:
+            plantID(int): the ID of the plant to check.
         """
         # create a connection
         con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
@@ -674,7 +687,7 @@ class SQLClient:
         #checks to see if the plant type is already in the database
         rs = con.cursor(cursor_class=MySQLCursorPrepared)
 
-
+        #total amount of times that the plant has been watered.
         statement = """
         SELECT COUNT(*)
         FROM WaterEvent W
@@ -686,11 +699,17 @@ class SQLClient:
         for char in amount_queries:
             if char.isdigit():
                 string += char
-        print string
+        water_count = string
+        print "watercount:",water_count
+
+
+        #the first time the plant was watered
         statement = """
-        SELECT MIN(DATE(W.timeWatered))
-        FROM WaterEvent W
-        WHERE %s = W.plantID
+        SELECT MIN(DATE(W.timeWatered)),T.thirst
+        FROM WaterEvent W, Plant P,PlantType T
+        WHERE %s = W.plantID AND P.plantID = W.plantID AND
+        P.plantType = T.ID
+        GROUP BY P.plantID
         """%(plantID)
 
         rs.execute(statement)
@@ -699,7 +718,22 @@ class SQLClient:
         for char in min_date:
             if char.isdigit():
                 string += char
-        print string
+        thirst = string[8:]
+        #gets the date of the first time the plant was watered
+        first_date = string[4]+string[5]+"/" + string[6] + string[7] + "/"+string[0] + string[1] + string[2] + string[3]
+        #gets the current date
+        now = datetime.datetime.now()
+        print "wC", water_count, thirst
+        days_survive = int(water_count)* int(thirst)
+        date = datetime.datetime.strptime(first_date,'%m/%d/%Y') + datetime.timedelta(days = days_survive)
+        print "New date: ",date
+
+        if(now > date):
+            print "needs to be watered"
+            return False
+        else:
+            print "Good work!"
+            return True
 
 
 #####################
@@ -733,12 +767,13 @@ class SQLClient:
             userID = rand.randint(0,2453255)
             user_name = name_list[i % 5]
             phone_number = rand.randint(0,5256784589)
-            self.add_user(userID,user_name,phone_number)
+            self.add_user(i,user_name,phone_number)
             plant_name = plant_list[i % 4]
             location_name = location_list[i % 6]
             area_name = area[i % 5]
             plantID = self.add_plant(plant_list[i % 4],location_name,area_name,plant_name)
             self.add_ownership(userID,plantID)
+            self.add_water_event(userID,plantID)
 
     def get_spot_in_table(self,table):
         """
