@@ -143,7 +143,7 @@ class SQLClient:
         WHERE plantID = %s;""" %(plantID)
         if(self.check(statement)== True):
             print("plant not in database")
-            return
+            return False
         #checks to make sure the user is in the database
         statement = """
         SELECT *
@@ -151,14 +151,14 @@ class SQLClient:
         WHERE userID = %s;""" %(userID)
         if(self.check(statement)== True):
             print "user not in database"
-            return
+            return False
         #checks to make sure that the plant is in the database
         statement = """
         SELECT * FROM PlantOwnership
         WHERE userID = %s AND plantID = %s """ %(userID,plantID)
         if(self.check(statement) == False):
             print "The relationship already exists!"
-            return
+            return False
         #inserts the plant
         statement = """
         INSERT INTO PlantOwnership(userID,plantID) VALUES(%s,%s) """ %(userID,plantID)
@@ -167,6 +167,7 @@ class SQLClient:
         con.commit()
         rs.close()
         con.close()
+        return True
 
     def add_water_event(self,userID,plantID):
         """
@@ -378,6 +379,7 @@ class SQLClient:
         """
         if(self.check("SELECT * FROM Plant WHERE plantID = %s" % plantID) == False):
             self.remove("Plant",plantID,"plantID")
+            return
         print "The Plant is not in the database."
 
     def remove_user(self, userID):
@@ -557,13 +559,14 @@ class SQLClient:
             return
 
         statement = """
-        SELECT P.plantName
+        SELECT O.plantID,P.plantName
         FROM PlantOwnership O, Plant P
         WHERE O.plantID = P.plantID AND O.userID = %s""" %(userID)
         rs.execute(statement)
 
-        for pull in rs:
-            print pull
+        for (ID,name) in rs:
+            print '{}--{}'.format(ID,name)
+
         rs.close()
         con.close()
 
@@ -602,12 +605,10 @@ class SQLClient:
             print("No dead plants were found")
             return
         rs.execute(statement)
-        text = ""
-        for pull in rs:
-            text += str(pull)
+        for pull,name in rs:
+            print '{}--{}'.format(pull,name)
         rs.close()
         con.close()
-        return text
 
 
     def building_most_plants(self):
@@ -622,13 +623,33 @@ class SQLClient:
         FROM Location L, Plant P
         WHERE L.locationID = P.locationID
         GROUP BY L.locationID
+        HAVING COUNT(*) >= ALL(SELECT COUNT(*)
+                               FROM Plant P
+                               GROUP BY P.locationID) """
+        rs.execute(statement)
+        for pull,name,count in rs:
+            print '{}--{}--{}'.format(pull,name,count)
+        rs.close()
+        con.close()
+
+    def building_least_plants(self):
+        """
+        Returns the user with the least plants.
+        """
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+        statement = """
+        SELECT L.building,L.area, COUNT(*)
+        FROM Location L, Plant P
+        WHERE L.locationID = P.locationID
+        GROUP BY L.locationID
         HAVING COUNT(*) <= ALL(SELECT COUNT(*)
                                FROM Plant P
                                GROUP BY P.locationID) """
         rs.execute(statement)
-        text = ""
-        for pull in rs:
-            text += str(pull)
+        for pull,name,count in rs:
+            print '{}--{}--{}'.format(pull,name,count)
         rs.close()
         con.close()
         return text
@@ -651,20 +672,16 @@ class SQLClient:
         #checks to see if the plant type is already in the database
         rs = con.cursor(cursor_class=MySQLCursorPrepared)
         statement = """
-        SELECT *
+        SELECT YEAR(timeWatered),MONTH(timeWatered),DAY(timeWatered)
         FROM WaterEvent W
         WHERE W.timeWatered >= '2017-%s-%s 00:00:00' AND W.timeWatered < '2017-%s-%s 00:00:00'
         AND %s = W.userID
         """ % (begin_month,begin_day,end_month,end_day,userID)
         rs.execute(statement)
-        val = str(rs.fetchall())
-        string = ""
-        for char in val:
-            string += char
-        con.commit()
+        for (year,month,day) in rs:
+            print '{},{},{}'.format(year,month,day)
         rs.close()
         con.close()
-        return string
 
     def most_watering_events(self):
         """
@@ -716,7 +733,7 @@ class SQLClient:
             if char.isdigit():
                 string += char
         water_count = string
-        print "watercount:",water_count
+
 
 
         #the first time the plant was watered
@@ -740,16 +757,14 @@ class SQLClient:
         #gets the current date
 
         now = datetime.datetime.now()
-        print "wC", water_count, thirst
         days_survive = int(water_count)* int(thirst)
         date = datetime.datetime.strptime(first_date,'%m/%d/%Y') + datetime.timedelta(days = days_survive)
-        print "New date: ",date
 
         if(now > date):
-            print "Needs to Be Watered."
+            print "Needs to be watered!"
             return False
         else:
-            print "Good work!"
+            print "Good work! Plant is sufficiently watered"
             return True
 
 
