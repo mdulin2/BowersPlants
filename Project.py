@@ -18,9 +18,11 @@ class SQLClient:
         A function to test the SQL code in
         """
         #self.remove_plant_ownership(1,1)
+	"""
         for i in range(200):
             #self.add_plant(i)
             self.add_ownership(1,i)
+	"""
 
         #self.add_values(100)
     def display_table(self, table_start):
@@ -146,7 +148,7 @@ class SQLClient:
         WHERE plantID = %s;""" %(plantID)
         if(self.check(statement)== True):
             print("plant not in database")
-            return
+            return False
         #checks to make sure the user is in the database
         statement = """
         SELECT *
@@ -154,14 +156,14 @@ class SQLClient:
         WHERE userID = %s;""" %(userID)
         if(self.check(statement)== True):
             print "user not in database"
-            return
+            return False
         #checks to make sure that the plant is in the database
         statement = """
         SELECT * FROM PlantOwnership
         WHERE userID = %s AND plantID = %s """ %(userID,plantID)
         if(self.check(statement) == False):
             print "The relationship already exists!"
-            return
+            return False
         #inserts the plant
         statement = """
         INSERT INTO PlantOwnership(userID,plantID) VALUES(%s,%s) """ %(userID,plantID)
@@ -170,6 +172,7 @@ class SQLClient:
         con.commit()
         rs.close()
         con.close()
+        return True
 
     def add_water_event(self,userID,plantID):
         """
@@ -381,6 +384,7 @@ class SQLClient:
         """
         if(self.check("SELECT * FROM Plant WHERE plantID = %s" % plantID) == False):
             self.remove("Plant",plantID,"plantID")
+            return
         print "The Plant is not in the database."
 
     def remove_user(self, userID):
@@ -566,7 +570,7 @@ class SQLClient:
         rs.execute(statement)
 
         for pull in rs:
-            print pull
+            print '{}'.format(pull)
         rs.close()
         con.close()
 
@@ -625,16 +629,35 @@ class SQLClient:
         FROM Location L, Plant P
         WHERE L.locationID = P.locationID
         GROUP BY L.locationID
+        HAVING COUNT(*) >= ALL(SELECT COUNT(*)
+                               FROM Plant P
+                               GROUP BY P.locationID) """
+        rs.execute(statement)
+        for pull,name,count in rs:
+            print '{}--{}--{}'.format(pull,name,count)
+        rs.close()
+        con.close()
+        
+    def building_least_plants(self):
+        """
+        Returns the user with the most plants.
+        """
+        con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
+                                      database=self.dab)
+        rs = con.cursor(cursor_class=MySQLCursorPrepared)
+        statement = """
+        SELECT L.building,L.area, COUNT(*)
+        FROM Location L, Plant P
+        WHERE L.locationID = P.locationID
+        GROUP BY L.locationID
         HAVING COUNT(*) <= ALL(SELECT COUNT(*)
                                FROM Plant P
                                GROUP BY P.locationID) """
         rs.execute(statement)
-        text = ""
-        for pull in rs:
-            text += str(pull)
+        for pull,name,count in rs:
+            print '{}--{}--{}'.format(pull,name,count)
         rs.close()
         con.close()
-        return text
 
     def find_watering_events(self,begin_month,begin_day,end_month,end_day,userID):
         """
@@ -686,8 +709,8 @@ class SQLClient:
                 GROUP BY YEAR(timeWatered),MONTH(timeWatered),DAY(timeWatered))
         """
         rs.execute(statement)
-        date = str(rs.fetchall())
-        return date
+        for (val) in rs:
+            print '{}'.format(val)
 
     def is_plant_watered(self,plantID):
         """
@@ -714,7 +737,6 @@ class SQLClient:
             if char.isdigit():
                 string += char
         water_count = string
-        print "watercount:",water_count
 
 
         #the first time the plant was watered
@@ -737,16 +759,14 @@ class SQLClient:
         first_date = string[4]+string[5]+"/" + string[6] + string[7] + "/"+string[0] + string[1] + string[2] + string[3]
         #gets the current date
         now = datetime.datetime.now()
-        print "wC", water_count, thirst
         days_survive = int(water_count)* int(thirst)
         date = datetime.datetime.strptime(first_date,'%m/%d/%Y') + datetime.timedelta(days = days_survive)
-        print "New date: ",date
 
         if(now > date):
-            print "needs to be watered"
+            print "Needs to be watered!"
             return False
         else:
-            print "Good work!"
+            print "Good work! Plant is sufficiently watered"
             return True
 
 
