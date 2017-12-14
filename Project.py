@@ -17,8 +17,10 @@ class SQLClient:
         """
         A function to test the SQL code in
         """
-        self.remove_plant_ownership(1,1)
-        #self.add_ownership(1,1)
+        #self.remove_plant_ownership(1,1)
+        for i in range(200):
+            #self.add_plant(i)
+            self.add_ownership(1,i)
 
         #self.add_values(100)
     def display_table(self, table_start):
@@ -415,14 +417,14 @@ class SQLClient:
 #####################
 
     def update_user_info(self, table, column, value, ID):
-        """
-        Updates the user info in a general fashion
-        Args:
+         """
+         Updates the user info in a general fashion
+         Args:
             table: the table being updated
             column: the column being updated
             value: the value to being changed in column
             ID: the reference for the value
-        """
+         """
 
          con = mysql.connector.connect(user=self.usr,password=self.pwd, host=self.hst,
                                       database=self.dab)
@@ -488,14 +490,15 @@ class SQLClient:
                                       database=self.dab)
         rs = con.cursor(cursor_class=MySQLCursorPrepared)
         statement = """
-        SELECT P.plantID
+        SELECT P.plantID, P.plantName
         FROM Plant P LEFT OUTER JOIN PlantOwnership O on P.plantID = O.plantID
         WHERE O.userID IS NULL;
         """
 
         rs.execute(statement)
-        for pull in rs:
-            print pull
+        print "Plant--Name"
+        for (plant,name) in rs:
+            print '{}-{}'.format(plant,name)
         rs.close()
         con.close()
 
@@ -507,12 +510,12 @@ class SQLClient:
                                       database=self.dab)
         rs = con.cursor(cursor_class=MySQLCursorPrepared)
         statement = """
-        SELECT U.userID
+        SELECT U.userID,U.name
         FROM Users U LEFT OUTER JOIN PlantOwnership O on U.userID = O.userID
         WHERE O.plantID IS NULL; """
         rs.execute(statement)
-        for pull in rs:
-            print pull
+        for pull,name in rs:
+            print '{}--{}'.format(pull,name)
         rs.close()
         con.close()
 
@@ -532,8 +535,8 @@ class SQLClient:
                                GROUP BY O.userID)
         """
         rs.execute(statement)
-        for pull in rs:
-            print pull
+        for pull,name in rs:
+            print '{}--{}'.format(pull,name)
         rs.close()
         con.close()
 
@@ -841,6 +844,6 @@ class SQLClient:
         rs.close()
         con.close()
         return string
-    
+
 if __name__ == '__main__':
     pass

@@ -154,15 +154,18 @@ class User:
 
 		if(selection == 1):
 			# find plants without users
-			pass
+			print("Plants without Users:")
+			self.queries.plants_without_users()
 
 		elif(selection == 2):
 			# find users without plants
-			pass
+			print("Users without Plants:")
+			self.queries.users_without_plants()
 
 		elif(selection == 3):
 			# find users with the most amount of plants
-			pass
+			print("Users with the Most Plants:")
+			self.queries.users_with_most_plants()
 
 		elif(selection == 4):
 			# find the building with the most plants
@@ -194,7 +197,7 @@ class User:
 
 if __name__ == '__main__': #runs if it's the main function being called
 	Y = User()
-	
+
 	'''
 	INSERT INTO WaterEvent(waterID,plantID,userID,timeWatered)
 	 VALUES(1000000,157,48755,'1996-11-11 06:14:00');
